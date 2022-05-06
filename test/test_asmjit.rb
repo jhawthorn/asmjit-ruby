@@ -9,6 +9,7 @@ class TestAsmJIT < Minitest::Test
 
   def test_it_does_something_useful
     code = AsmJIT::CodeHolder.new
+    assembler = AsmJIT::X86::Assembler.new(code)
     p code
   end
 end
