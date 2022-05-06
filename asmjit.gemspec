@@ -4,7 +4,7 @@ require_relative "lib/asmjit/version"
 
 Gem::Specification.new do |spec|
   spec.name = "asmjit"
-  spec.version = Asmjit::VERSION
+  spec.version = AsmJIT::VERSION
   spec.authors = ["John Hawthorn"]
   spec.email = ["john@hawthorn.email"]
 

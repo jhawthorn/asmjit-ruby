@@ -22,7 +22,12 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```
+f = AsmJIT.assemble do |a|
+  a.mov(:eax, 1)
+  a.ret()
+end.to_func
+```
 
 ## Development
 

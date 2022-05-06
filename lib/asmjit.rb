@@ -3,7 +3,7 @@
 require_relative "asmjit/version"
 require_relative "asmjit/asmjit"
 
-module Asmjit
+module AsmJIT
   class Error < StandardError; end
   # Your code goes here...
 end

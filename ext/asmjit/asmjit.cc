@@ -2,8 +2,8 @@
 
 VALUE rb_mAsmjit;
 
-void
+extern "C" void
 Init_asmjit(void)
 {
-  rb_mAsmjit = rb_define_module("Asmjit");
+  rb_mAsmjit = rb_define_module("AsmJIT");
 }
