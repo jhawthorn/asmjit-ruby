@@ -8,17 +8,21 @@ VALUE rb_mAsmjit;
 
 static JitRuntime jit_runtime;
 
-void foo_free(void *) {}
-
 struct CodeHolderWrapper {
     CodeHolder *code;
 };
+
+void code_holder_free(void *data) {
+    CodeHolderWrapper *wrapper = static_cast<CodeHolderWrapper *>(data);
+    delete wrapper->code;
+    xfree(wrapper);
+}
 
 static const rb_data_type_t code_holder_type = {
     .wrap_struct_name = "foo",
     .function = {
         .dmark = NULL,
-        .dfree = foo_free,
+        .dfree = code_holder_free,
         .dsize = NULL,
     },
     .data = NULL,
@@ -26,7 +30,7 @@ static const rb_data_type_t code_holder_type = {
 };
 
 VALUE code_holder_alloc(VALUE self) {
-    CodeHolderWrapper *wrapper = (CodeHolderWrapper *)xmalloc(sizeof(CodeHolderWrapper));
+    CodeHolderWrapper *wrapper = static_cast<CodeHolderWrapper *>(xmalloc(sizeof(CodeHolderWrapper)));
     wrapper->code = new CodeHolder();
 
     return TypedData_Wrap_Struct(self, &code_holder_type, wrapper);
