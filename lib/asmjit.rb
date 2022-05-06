@@ -4,6 +4,13 @@ require_relative "asmjit/version"
 require_relative "asmjit/asmjit"
 
 module AsmJIT
-  class Error < StandardError; end
-  # Your code goes here...
+  module X86
+    class Assembler
+      INSTRUCTIONS.each do |name|
+        define_method(name) do |*args|
+          emit(name, *args)
+        end
+      end
+    end
+  end
 end
