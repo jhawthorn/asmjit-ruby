@@ -15,6 +15,7 @@ class TestAsmJIT < Minitest::Test
   def test_it_can_assemble
     code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
+    assembler.mov(:eax, 123)
     assembler.ret
   end
 

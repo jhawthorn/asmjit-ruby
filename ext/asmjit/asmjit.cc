@@ -116,6 +116,19 @@ VALUE x86_assembler_initialize(VALUE self, VALUE code_holder) {
     return self;
 }
 
+Operand parse_operand(VALUE val) {
+    if (FIXNUM_P(val)) {
+        return Imm(NUM2LL(val));
+    } else if (RB_TYPE_P(val, T_SYMBOL)) {
+        if (val == ID2SYM(rb_intern("eax"))) {
+            return x86::eax;
+        } else if (val == ID2SYM(rb_intern("rax"))) {
+            return x86::rax;
+        }
+    }
+    rb_raise(rb_eAsmJITError, "bad operand: %" PRIsVALUE, val);
+}
+
 VALUE x86_assembler_emit(int argc, VALUE* argv, VALUE self) {
     x86AssemblerWrapper *wrapper;
     TypedData_Get_Struct(self, x86AssemblerWrapper, &x86_assembler_type, wrapper);
@@ -123,13 +136,18 @@ VALUE x86_assembler_emit(int argc, VALUE* argv, VALUE self) {
     x86::Assembler *assembler = wrapper->assembler;
 
     if (argc < 1) return Qnil;
-
-    cout << "emit!" << argc << endl;
+    if (argc > 7) return Qnil;
 
     VALUE insn_name = argv[0];
     InstId inst_id = InstAPI::stringToInstId(assembler->arch(), RSTRING_PTR(insn_name), RSTRING_LEN(insn_name));
 
-    assembler->emit(inst_id);
+    Operand operands[6];
+    for (int i = 0; i < argc - 1; i++) {
+        operands[i] = parse_operand(argv[i + 1]);
+    }
+
+    //assembler->emit(inst_id);
+    assembler->emitOpArray(inst_id, &operands[0], argc - 1);
 
     return self;
 }
