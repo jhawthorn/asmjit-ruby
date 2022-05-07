@@ -17,6 +17,17 @@ class TestAsmJIT < Minitest::Test
     assembler = AsmJIT::X86::Assembler.new(code)
     assembler.mov(:eax, 123)
     assembler.ret
+    ptr = code.to_ptr
+
+    require "fiddle"
+    func = Fiddle::Function.new(
+      ptr,
+      [],
+      Fiddle::TYPE_INT
+    )
+
+    ret = func.call
+    assert_equal 123, ret
   end
 
   def test_errors_on_invalid_use

@@ -68,6 +68,18 @@ VALUE code_holder_initialize(VALUE self) {
     return self;
 }
 
+VALUE code_holder_to_ptr(VALUE self) {
+    CodeHolderWrapper *wrapper;
+    TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
+
+    CodeHolder *code = wrapper->code;
+
+    int (*fn)(void);
+    jit_runtime.add(&fn, code);
+
+    return ULL2NUM(uintptr_t(fn));
+}
+
 struct x86AssemblerWrapper {
     x86::Assembler *assembler;
     VALUE code_holder;
@@ -168,6 +180,7 @@ Init_asmjit(void)
 	VALUE cCodeHolder = rb_define_class_under(rb_mAsmjit, "CodeHolder", rb_cObject);
 	rb_define_alloc_func(cCodeHolder, code_holder_alloc);
 	rb_define_method(cCodeHolder, "initialize", code_holder_initialize, 0);
+	rb_define_method(cCodeHolder, "to_ptr", code_holder_to_ptr, 0);
 
 	VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 
