@@ -80,6 +80,19 @@ VALUE code_holder_to_ptr(VALUE self) {
     return ULL2NUM(uintptr_t(fn));
 }
 
+VALUE code_holder_binary(VALUE self) {
+    CodeHolderWrapper *wrapper;
+    TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
+
+    CodeHolder *code = wrapper->code;
+
+    CodeBuffer buffer = code->sectionById(0)->buffer();
+    return rb_str_new(
+            reinterpret_cast<const char *>(buffer.data()),
+            buffer.size()
+            );
+}
+
 struct x86AssemblerWrapper {
     x86::Assembler *assembler;
     VALUE code_holder;
@@ -181,6 +194,7 @@ Init_asmjit(void)
 	rb_define_alloc_func(cCodeHolder, code_holder_alloc);
 	rb_define_method(cCodeHolder, "initialize", code_holder_initialize, 0);
 	rb_define_method(cCodeHolder, "to_ptr", code_holder_to_ptr, 0);
+	rb_define_method(cCodeHolder, "binary", code_holder_binary, 0);
 
 	VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 

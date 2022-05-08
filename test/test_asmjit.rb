@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-class TestAsmJIT < Minitest::Test
+class TestAsmJIT < AsmJitTest
   def test_that_it_has_a_version_number
     refute_nil ::AsmJIT::VERSION
   end
@@ -12,14 +12,25 @@ class TestAsmJIT < Minitest::Test
     assert_equal 1663, instructions.size
   end
 
-  def test_it_can_assemble
+  def test_assembly_binary_output
+    code = AsmJIT::CodeHolder.new
+    assembler = AsmJIT::X86::Assembler.new(code)
+    assembler.mov(:eax, 0x123)
+    assembler.mov(:eax, 0x456)
+
+    assert_disasm [
+      "mov eax, 0x123",
+      "mov eax, 0x456"
+    ], code
+  end
+
+  def test_calling_assembled_function
     code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
     assembler.mov(:eax, 123)
     assembler.ret
     ptr = code.to_ptr
 
-    require "fiddle"
     func = Fiddle::Function.new(
       ptr,
       [],

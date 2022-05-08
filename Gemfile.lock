@@ -6,6 +6,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    hatstone (1.0.0)
     minitest (5.15.0)
     rake (13.0.6)
     rake-compiler (1.2.0)
@@ -16,6 +17,7 @@ PLATFORMS
 
 DEPENDENCIES
   asmjit!
+  hatstone
   minitest (~> 5.0)
   rake (~> 13.0)
   rake-compiler
