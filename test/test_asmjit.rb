@@ -41,6 +41,23 @@ class TestAsmJIT < AsmJitTest
     assert_equal 123, ret
   end
 
+  def test_readme_example
+    example = <<~RUBY
+      f = AsmJIT.assemble do |a|
+        a.mov :eax, 123
+        a.ret
+      end.to_fiddle
+
+      f.call
+      # => 123
+    RUBY
+
+    assert_includes File.read("#{__dir__}/../README.md"), example, "README example has been upadted"
+
+    result = eval(example)
+    assert_equal 123, result
+  end
+
   def test_errors_on_invalid_use
     code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)

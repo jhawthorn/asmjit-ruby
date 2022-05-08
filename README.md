@@ -22,9 +22,12 @@ Or install it yourself as:
 
 ```
 f = AsmJIT.assemble do |a|
-  a.mov(:eax, 1)
-  a.ret()
-end.to_func
+  a.mov :eax, 123
+  a.ret
+end.to_fiddle
+
+f.call
+# => 123
 ```
 
 ## Development
