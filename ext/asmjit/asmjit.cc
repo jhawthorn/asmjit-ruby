@@ -80,6 +80,27 @@ VALUE code_holder_to_ptr(VALUE self) {
     return ULL2NUM(uintptr_t(fn));
 }
 
+#define rb_define_method_id_original rb_define_method_id
+
+VALUE code_holder_define_method(VALUE self, VALUE mod, VALUE name, VALUE arity_val) {
+    CodeHolderWrapper *wrapper;
+    TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
+
+    CodeHolder *code = wrapper->code;
+
+    int arity = FIX2INT(arity_val);
+    ID id = rb_sym2id(name);
+
+    VALUE (*fn)(ANYARGS);
+    jit_runtime.add(&fn, code);
+
+    // avoid cxxanyargs
+#undef rb_define_method_id
+    rb_define_method_id(mod, id, fn, arity);
+
+    return name;
+}
+
 VALUE code_holder_binary(VALUE self) {
     CodeHolderWrapper *wrapper;
     TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
@@ -194,6 +215,7 @@ Init_asmjit(void)
     rb_define_alloc_func(cCodeHolder, code_holder_alloc);
     rb_define_method(cCodeHolder, "initialize", code_holder_initialize, 0);
     rb_define_method(cCodeHolder, "to_ptr", code_holder_to_ptr, 0);
+    rb_define_method(cCodeHolder, "def_method", code_holder_define_method, 3);
     rb_define_method(cCodeHolder, "binary", code_holder_binary, 0);
 
     VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");

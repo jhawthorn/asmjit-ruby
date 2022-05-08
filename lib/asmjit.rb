@@ -3,6 +3,7 @@
 require_relative "asmjit/version"
 require_relative "asmjit/asmjit"
 
+AsmJit = AsmJIT
 module AsmJIT
   def self.assemble
     code = CodeHolder.new
@@ -23,6 +24,18 @@ module AsmJIT
         inputs || [],
         output || Fiddle::TYPE_INT
       )
+    end
+
+    def def_module(arity, method_name: :call)
+      mod = Module.new
+      self.def_method(mod, method_name, arity)
+      mod
+    end
+
+    def def_class(arity, method_name: :call)
+      mod = Class.new
+      self.def_method(mod, method_name, arity)
+      mod
     end
   end
 
