@@ -190,18 +190,18 @@ Init_asmjit(void)
 
     rb_eAsmJITError = rb_define_class_under(rb_mAsmjit, "Error", rb_eStandardError);
 
-	VALUE cCodeHolder = rb_define_class_under(rb_mAsmjit, "CodeHolder", rb_cObject);
-	rb_define_alloc_func(cCodeHolder, code_holder_alloc);
-	rb_define_method(cCodeHolder, "initialize", code_holder_initialize, 0);
-	rb_define_method(cCodeHolder, "to_ptr", code_holder_to_ptr, 0);
-	rb_define_method(cCodeHolder, "binary", code_holder_binary, 0);
+    VALUE cCodeHolder = rb_define_class_under(rb_mAsmjit, "CodeHolder", rb_cObject);
+    rb_define_alloc_func(cCodeHolder, code_holder_alloc);
+    rb_define_method(cCodeHolder, "initialize", code_holder_initialize, 0);
+    rb_define_method(cCodeHolder, "to_ptr", code_holder_to_ptr, 0);
+    rb_define_method(cCodeHolder, "binary", code_holder_binary, 0);
 
-	VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
+    VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 
-	VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cObject);
-	rb_define_alloc_func(cX86Assembler, x86_assembler_alloc);
-	rb_define_method(cX86Assembler, "initialize", x86_assembler_initialize, 1);
-	rb_define_method(cX86Assembler, "emit", x86_assembler_emit, -1);
+    VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cObject);
+    rb_define_alloc_func(cX86Assembler, x86_assembler_alloc);
+    rb_define_method(cX86Assembler, "initialize", x86_assembler_initialize, 1);
+    rb_define_method(cX86Assembler, "emit", x86_assembler_emit, -1);
 
     VALUE instructions = rb_ary_new();
 
