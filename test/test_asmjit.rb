@@ -80,7 +80,7 @@ class TestAsmJIT < AsmJitTest
     assert_equal 2, klass.new.call
   end
 
-  def test_errors_on_invalid_use
+  def test_errors_on_insufficient_operands
     code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
 
@@ -88,5 +88,15 @@ class TestAsmJIT < AsmJitTest
       assembler.add()
     end
     assert_equal "AsmJIT error: InvalidInstruction: add", ex.message
+  end
+
+  def test_errors_on_invalid_operands
+    code = AsmJIT::CodeHolder.new
+    assembler = AsmJIT::X86::Assembler.new(code)
+
+    ex = assert_raises AsmJIT::Error do
+      assembler.add 1, 2
+    end
+    assert_equal "AsmJIT error: InvalidInstruction: add 1, 2", ex.message
   end
 end
