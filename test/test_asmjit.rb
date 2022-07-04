@@ -24,6 +24,22 @@ class TestAsmJIT < AsmJitTest
     ], code
   end
 
+  def test_assembly_simple_operations
+    code = AsmJIT::CodeHolder.new
+    asm = AsmJIT::X86::Assembler.new(code)
+    asm.mov(:eax, 0x123)
+    asm.add(:eax, 0x456)
+    asm.mov(:ebx, 1)
+    asm.add(:eax, :ebx)
+
+    assert_disasm [
+      "mov eax, 0x123",
+      "add eax, 0x456",
+      "mov ebx, 1",
+      "add eax, ebx",
+    ], code
+  end
+
   def test_calling_assembled_function
     code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)

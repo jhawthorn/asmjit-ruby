@@ -9,6 +9,7 @@ using namespace asmjit;
 
 static VALUE rb_mAsmjit;
 static VALUE rb_eAsmJITError;
+static VALUE cX86Reg;
 
 static JitRuntime jit_runtime;
 
@@ -54,16 +55,7 @@ VALUE code_holder_initialize(VALUE self) {
     TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
 
     CodeHolder *code = wrapper->code;
-
     code->init(jit_runtime.environment());
-
-    //x86::Assembler a(code);
-
-    //a.mov(x86::eax, 1);
-    //a.ret();
-
-    //int (*fn)(void);
-    //Error err = jit_runtime.add(&fn, code);
 
     return self;
 }
@@ -112,6 +104,57 @@ VALUE code_holder_binary(VALUE self) {
             reinterpret_cast<const char *>(buffer.data()),
             buffer.size()
             );
+}
+
+static const rb_data_type_t x86_register_type = {
+    .wrap_struct_name = "AsmJIT::X86::Register",
+    .function = {
+        .dmark = NULL,
+        .dfree = RUBY_DEFAULT_FREE,
+        .dsize = NULL,
+    },
+    .data = NULL,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+struct x86RegisterWrapper {
+    x86::Reg reg;
+};
+
+static VALUE build_register(const char *c_name, x86::Reg reg) {
+    x86RegisterWrapper *wrapper = static_cast<x86RegisterWrapper *>(xmalloc(sizeof(x86RegisterWrapper)));
+    wrapper->reg = reg;
+
+    VALUE name = ID2SYM(rb_intern(c_name));
+    VALUE obj = TypedData_Wrap_Struct(cX86Reg, &x86_register_type, wrapper);
+    rb_iv_set(obj, "@name", name);
+    return obj;
+}
+
+static x86::Reg x86_reg_get(VALUE val) {
+    x86RegisterWrapper *wrapper;
+    TypedData_Get_Struct(val, x86RegisterWrapper, &x86_register_type, wrapper);
+    return wrapper->reg;
+}
+
+static VALUE build_registers_hash() {
+    VALUE hash = rb_hash_new();
+
+#define REGISTER(name) rb_hash_aset(hash, ID2SYM(rb_intern(#name)), build_register((#name), x86::name))
+
+    REGISTER(eax);
+    REGISTER(ebx);
+    REGISTER(ecx);
+    REGISTER(edx);
+
+    REGISTER(rax);
+    REGISTER(rbx);
+    REGISTER(rcx);
+    REGISTER(rdx);
+
+#undef REGISTER
+
+    return hash;
 }
 
 struct x86AssemblerWrapper {
@@ -165,12 +208,8 @@ VALUE x86_assembler_initialize(VALUE self, VALUE code_holder) {
 Operand parse_operand(VALUE val) {
     if (FIXNUM_P(val)) {
         return Imm(NUM2LL(val));
-    } else if (RB_TYPE_P(val, T_SYMBOL)) {
-        if (val == ID2SYM(rb_intern("eax"))) {
-            return x86::eax;
-        } else if (val == ID2SYM(rb_intern("rax"))) {
-            return x86::rax;
-        }
+    } else if (rb_class_of(val) == cX86Reg) {
+        return x86_reg_get(val);
     }
     rb_raise(rb_eAsmJITError, "bad operand: %" PRIsVALUE, val);
 }
@@ -185,6 +224,7 @@ VALUE x86_assembler_emit(int argc, VALUE* argv, VALUE self) {
     if (argc > 7) return Qnil;
 
     VALUE insn_name = argv[0];
+    Check_Type(insn_name, T_STRING);
     InstId inst_id = InstAPI::stringToInstId(assembler->arch(), RSTRING_PTR(insn_name), RSTRING_LEN(insn_name));
 
     Operand operands[6];
@@ -223,7 +263,11 @@ Init_asmjit(void)
     VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cObject);
     rb_define_alloc_func(cX86Assembler, x86_assembler_alloc);
     rb_define_method(cX86Assembler, "initialize", x86_assembler_initialize, 1);
-    rb_define_method(cX86Assembler, "emit", x86_assembler_emit, -1);
+    rb_define_method(cX86Assembler, "_emit", x86_assembler_emit, -1);
+
+    cX86Reg = rb_define_class_under(rb_mX86, "Reg", rb_cObject);
+    rb_undef_alloc_func(cX86Reg);
+    rb_define_attr(cX86Reg, "name", 1, 0);
 
     VALUE instructions = rb_ary_new();
 
@@ -239,4 +283,5 @@ Init_asmjit(void)
     }
 
     rb_define_const(rb_mX86, "INSTRUCTIONS", instructions);
+    rb_define_const(rb_mX86, "REGISTERS", build_registers_hash());
 }

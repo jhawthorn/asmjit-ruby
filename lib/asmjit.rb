@@ -41,10 +41,27 @@ module AsmJIT
 
   module X86
     class Assembler
+      def parse_operand(arg)
+        if Symbol === arg && reg = REGISTERS[arg]
+          reg
+        else
+          arg
+        end
+      end
+
+      def emit(*args)
+        _emit(*(args.map { |arg| parse_operand(arg) }))
+      end
+
       INSTRUCTIONS.each do |name|
         define_method(name) do |*args|
           emit(name, *args)
         end
+      end
+    end
+    class Reg
+      def inspect
+        "#<#{self.class} #{name}>"
       end
     end
   end
