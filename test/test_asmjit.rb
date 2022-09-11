@@ -62,7 +62,7 @@ class TestAsmJIT < AsmJitTest
   def test_assembly_memory_operand
     code = CodeHolder.new
     assembler = X86::Assembler.new(code)
-    assembler.mov(:rax, X86.ptr(X86::REGISTERS[:rcx], 8, 8))
+    assembler.mov(:rax, X86.qword_ptr(:rcx, 8))
 
     assert_disasm [
       "mov rax, qword ptr [rcx + 8]",

@@ -300,7 +300,7 @@ Init_asmjit(void)
 
     VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 
-    rb_define_singleton_method(rb_mX86, "ptr", x86_ptr, 3);
+    rb_define_singleton_method(rb_mX86, "_ptr", x86_ptr, 3);
 
     VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cObject);
     rb_define_alloc_func(cX86Assembler, x86_assembler_alloc);

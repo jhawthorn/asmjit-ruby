@@ -40,7 +40,9 @@ module AsmJIT
   end
 
   module X86
-    class Assembler
+    module Helpers
+      extend self
+
       def parse_operand(arg)
         if Symbol === arg && reg = REGISTERS[arg]
           reg
@@ -48,9 +50,21 @@ module AsmJIT
           arg
         end
       end
+    end
 
+    class << self
+      def ptr(base, offset, size)
+        _ptr(Helpers.parse_operand(base), offset, size)
+      end
+
+      def qword_ptr(base, offset)
+        ptr(base, offset, 8)
+      end
+    end
+
+    class Assembler
       def emit(*args)
-        _emit(*(args.map { |arg| parse_operand(arg) }))
+        _emit(*(args.map { |arg| Helpers.parse_operand(arg) }))
       end
 
       INSTRUCTIONS.each do |name|
