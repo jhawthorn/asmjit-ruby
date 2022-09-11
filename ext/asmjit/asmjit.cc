@@ -184,11 +184,15 @@ static VALUE build_registers_hash() {
     REGISTER(ebx);
     REGISTER(ecx);
     REGISTER(edx);
+    REGISTER(edi);
+    REGISTER(esi);
 
     REGISTER(rax);
     REGISTER(rbx);
     REGISTER(rcx);
     REGISTER(rdx);
+    REGISTER(rdi);
+    REGISTER(rsi);
 
 #undef REGISTER
 
