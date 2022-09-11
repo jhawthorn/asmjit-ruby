@@ -10,6 +10,7 @@ using namespace asmjit;
 static VALUE rb_mAsmjit;
 static VALUE rb_eAsmJITError;
 static VALUE cX86Reg;
+static VALUE cX86Mem;
 
 static JitRuntime jit_runtime;
 
@@ -137,6 +138,43 @@ static x86::Reg x86_reg_get(VALUE val) {
     return wrapper->reg;
 }
 
+static const rb_data_type_t x86_mem_type = {
+    .wrap_struct_name = "AsmJIT::X86::Mem",
+    .function = {
+        .dmark = NULL,
+        .dfree = RUBY_DEFAULT_FREE,
+        .dsize = NULL,
+    },
+    .data = NULL,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+struct x86MemWrapper {
+    x86::Mem mem;
+};
+
+static VALUE x86_ptr(VALUE _self, VALUE regv, VALUE offsetv, VALUE sizev) {
+    x86MemWrapper *wrapper = static_cast<x86MemWrapper *>(xmalloc(sizeof(x86MemWrapper)));
+
+    x86::Reg reg = x86_reg_get(regv);
+    if (!reg.isGp()) {
+        rb_raise(rb_eAsmJITError, "reg must be Gp");
+    }
+    int32_t offset = NUM2INT(offsetv);
+    uint32_t size = NUM2UINT(sizev);
+    x86::Mem mem = x86::ptr(reg.as<x86::Gp>(), offset, size);
+    wrapper->mem = mem;
+
+    VALUE obj = TypedData_Wrap_Struct(cX86Mem, &x86_mem_type, wrapper);
+    return obj;
+}
+
+static x86::Mem x86_mem_get(VALUE val) {
+    x86MemWrapper *wrapper;
+    TypedData_Get_Struct(val, x86MemWrapper, &x86_mem_type, wrapper);
+    return wrapper->mem;
+}
+
 static VALUE build_registers_hash() {
     VALUE hash = rb_hash_new();
 
@@ -210,6 +248,8 @@ Operand parse_operand(VALUE val) {
         return Imm(NUM2LL(val));
     } else if (rb_class_of(val) == cX86Reg) {
         return x86_reg_get(val);
+    } else if (rb_class_of(val) == cX86Mem) {
+        return x86_mem_get(val);
     }
     rb_raise(rb_eAsmJITError, "bad operand: %" PRIsVALUE, val);
 }
@@ -260,6 +300,8 @@ Init_asmjit(void)
 
     VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 
+    rb_define_singleton_method(rb_mX86, "ptr", x86_ptr, 3);
+
     VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cObject);
     rb_define_alloc_func(cX86Assembler, x86_assembler_alloc);
     rb_define_method(cX86Assembler, "initialize", x86_assembler_initialize, 1);
@@ -268,6 +310,9 @@ Init_asmjit(void)
     cX86Reg = rb_define_class_under(rb_mX86, "Reg", rb_cObject);
     rb_undef_alloc_func(cX86Reg);
     rb_define_attr(cX86Reg, "name", 1, 0);
+
+    cX86Mem = rb_define_class_under(rb_mX86, "Mem", rb_cObject);
+    rb_undef_alloc_func(cX86Mem);
 
     VALUE instructions = rb_ary_new();
 

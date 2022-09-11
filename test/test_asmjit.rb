@@ -3,6 +3,8 @@
 require "test_helper"
 
 class TestAsmJIT < AsmJitTest
+  include AsmJIT
+
   def test_that_it_has_a_version_number
     refute_nil ::AsmJIT::VERSION
   end
@@ -55,6 +57,16 @@ class TestAsmJIT < AsmJitTest
 
     ret = func.call
     assert_equal 123, ret
+  end
+
+  def test_assembly_memory_operand
+    code = CodeHolder.new
+    assembler = X86::Assembler.new(code)
+    assembler.mov(:rax, X86.ptr(X86::REGISTERS[:rcx], 8, 8))
+
+    assert_disasm [
+      "mov rax, qword ptr [rcx + 8]",
+    ], code
   end
 
   def test_readme_example
