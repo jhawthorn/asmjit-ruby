@@ -69,6 +69,22 @@ class TestAsmJIT < AsmJitTest
     ], code
   end
 
+  def test_label
+    code = CodeHolder.new
+    asm = X86::Assembler.new(code)
+
+    label = asm.new_label
+
+    asm.bind(label)
+    asm.sub(:rax, 1)
+    asm.jnz(label)
+
+    assert_disasm [
+      "sub rax, 1",
+      "jne 0"
+    ], code
+  end
+
   def test_readme_example
     example = <<~RUBY
       f = AsmJIT.assemble do |a|

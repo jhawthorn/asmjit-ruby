@@ -133,11 +133,29 @@ static VALUE build_register(const char *c_name, x86::Reg reg) {
     return obj;
 }
 
+static VALUE build_label(Label label) {
+    OperandWrapper *wrapper = static_cast<OperandWrapper *>(xmalloc(sizeof(OperandWrapper)));
+    wrapper->opnd = label;
+
+    VALUE obj = TypedData_Wrap_Struct(cX86Reg, &operand_type, wrapper);
+    return obj;
+}
+
+
 static Operand opnd_get(VALUE val) {
     OperandWrapper *wrapper;
     TypedData_Get_Struct(val, OperandWrapper, &operand_type, wrapper);
     return wrapper->opnd;
 }
+
+static Label label_get(VALUE val) {
+    Operand opnd = opnd_get(val);
+    if (!opnd.isLabel()) {
+        rb_raise(rb_eTypeError, "operand is not label");
+    }
+    return opnd.as<Label>();
+}
+
 static x86::Reg x86_reg_get(VALUE val) {
     Operand opnd = opnd_get(val);
     if (!opnd.isReg()) {
@@ -227,8 +245,11 @@ VALUE x86_assembler_new(VALUE self, VALUE code_holder) {
     CodeHolderWrapper *code_wrapper;
     TypedData_Get_Struct(code_holder, CodeHolderWrapper, &code_holder_type, code_wrapper);
 
+    x86::Assembler *assembler = new x86::Assembler(code_wrapper->code);
+    assembler->addDiagnosticOptions(DiagnosticOptions::kValidateAssembler);
+
     wrapper->code_holder = code_holder;
-    wrapper->emitter = new x86::Assembler(code_wrapper->code);
+    wrapper->emitter = assembler;
 
     return TypedData_Wrap_Struct(self, &base_emitter_type, wrapper);
 }
@@ -240,6 +261,30 @@ Operand parse_operand(VALUE val) {
         return opnd_get(val);
     }
     rb_raise(rb_eAsmJITError, "bad operand: %" PRIsVALUE, val);
+}
+
+VALUE base_emitter_new_label(VALUE self) {
+    BaseEmitterWrapper *wrapper;
+    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
+    BaseEmitter *emitter = wrapper->emitter;
+
+    Label label = emitter->newLabel();
+    return build_label(label);
+}
+
+VALUE base_emitter_bind(VALUE self, VALUE labelv) {
+    BaseEmitterWrapper *wrapper;
+    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
+    BaseEmitter *emitter = wrapper->emitter;
+
+    Label label = label_get(labelv);
+
+    int err = emitter->bind(label);
+    if (err) {
+        rb_raise(rb_eAsmJITError, "error binding label");
+    }
+
+    return labelv;
 }
 
 VALUE base_emitter_emit(int argc, VALUE* argv, VALUE self) {
@@ -290,6 +335,8 @@ Init_asmjit(void)
     VALUE rb_cBaseEmitter = rb_define_class_under(rb_mAsmjit, "BaseEmitter", rb_cObject);
     rb_undef_alloc_func(rb_cBaseEmitter);
     rb_define_method(rb_cBaseEmitter, "_emit", base_emitter_emit, -1);
+    rb_define_method(rb_cBaseEmitter, "new_label", base_emitter_new_label, 0);
+    rb_define_method(rb_cBaseEmitter, "bind", base_emitter_bind, 1);
 
     VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cBaseEmitter);
     rb_define_singleton_method(cX86Assembler, "new", x86_assembler_new, 1);
