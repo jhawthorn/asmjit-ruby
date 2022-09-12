@@ -194,24 +194,24 @@ static VALUE build_registers_hash() {
     return hash;
 }
 
-struct x86AssemblerWrapper {
-    x86::Assembler *assembler;
+struct BaseEmitterWrapper {
+    BaseEmitter *emitter;
     VALUE code_holder;
 };
 
 void x86_assembler_free(void *data) {
-    x86AssemblerWrapper *wrapper = static_cast<x86AssemblerWrapper *>(data);
-    delete wrapper->assembler;
+    BaseEmitterWrapper *wrapper = static_cast<BaseEmitterWrapper *>(data);
+    delete wrapper->emitter;
     xfree(wrapper);
 }
 
 void x86_assembler_mark(void *data) {
-    x86AssemblerWrapper *wrapper = static_cast<x86AssemblerWrapper *>(data);
+    BaseEmitterWrapper *wrapper = static_cast<BaseEmitterWrapper *>(data);
     rb_gc_mark(wrapper->code_holder);
 }
 
-static const rb_data_type_t x86_assembler_type = {
-    .wrap_struct_name = "AsmJIT::Assembler",
+static const rb_data_type_t base_emitter_type = {
+    .wrap_struct_name = "AsmJIT::BaseEmitter",
     .function = {
         .dmark = NULL,
         .dfree = x86_assembler_free,
@@ -221,25 +221,16 @@ static const rb_data_type_t x86_assembler_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-VALUE x86_assembler_alloc(VALUE self) {
-    x86AssemblerWrapper *wrapper = static_cast<x86AssemblerWrapper *>(xmalloc(sizeof(CodeHolderWrapper)));
-    wrapper->assembler = NULL;
-    wrapper->code_holder = Qnil;
-
-    return TypedData_Wrap_Struct(self, &x86_assembler_type, wrapper);
-}
-
-VALUE x86_assembler_initialize(VALUE self, VALUE code_holder) {
-    x86AssemblerWrapper *wrapper;
-    TypedData_Get_Struct(self, x86AssemblerWrapper, &x86_assembler_type, wrapper);
+VALUE x86_assembler_new(VALUE self, VALUE code_holder) {
+    BaseEmitterWrapper *wrapper = static_cast<BaseEmitterWrapper *>(xmalloc(sizeof(CodeHolderWrapper)));
 
     CodeHolderWrapper *code_wrapper;
     TypedData_Get_Struct(code_holder, CodeHolderWrapper, &code_holder_type, code_wrapper);
 
     wrapper->code_holder = code_holder;
-    wrapper->assembler = new x86::Assembler(code_wrapper->code);
+    wrapper->emitter = new x86::Assembler(code_wrapper->code);
 
-    return self;
+    return TypedData_Wrap_Struct(self, &base_emitter_type, wrapper);
 }
 
 Operand parse_operand(VALUE val) {
@@ -251,26 +242,25 @@ Operand parse_operand(VALUE val) {
     rb_raise(rb_eAsmJITError, "bad operand: %" PRIsVALUE, val);
 }
 
-VALUE x86_assembler_emit(int argc, VALUE* argv, VALUE self) {
-    x86AssemblerWrapper *wrapper;
-    TypedData_Get_Struct(self, x86AssemblerWrapper, &x86_assembler_type, wrapper);
+VALUE base_emitter_emit(int argc, VALUE* argv, VALUE self) {
+    BaseEmitterWrapper *wrapper;
+    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
 
-    x86::Assembler *assembler = wrapper->assembler;
+    BaseEmitter *emitter = wrapper->emitter;
 
     if (argc < 1) return Qnil;
     if (argc > 7) return Qnil;
 
     VALUE insn_name = argv[0];
     Check_Type(insn_name, T_STRING);
-    InstId inst_id = InstAPI::stringToInstId(assembler->arch(), RSTRING_PTR(insn_name), RSTRING_LEN(insn_name));
+    InstId inst_id = InstAPI::stringToInstId(emitter->arch(), RSTRING_PTR(insn_name), RSTRING_LEN(insn_name));
 
     Operand operands[6];
     for (int i = 0; i < argc - 1; i++) {
         operands[i] = parse_operand(argv[i + 1]);
     }
 
-    //assembler->emit(inst_id);
-    assembler->emitOpArray(inst_id, &operands[0], argc - 1);
+    emitter->emitOpArray(inst_id, &operands[0], argc - 1);
 
     return self;
 }
@@ -297,19 +287,20 @@ Init_asmjit(void)
 
     VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 
-    VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cObject);
-    rb_define_alloc_func(cX86Assembler, x86_assembler_alloc);
-    rb_define_method(cX86Assembler, "initialize", x86_assembler_initialize, 1);
-    rb_define_method(cX86Assembler, "_emit", x86_assembler_emit, -1);
+    VALUE rb_cBaseEmitter = rb_define_class_under(rb_mAsmjit, "BaseEmitter", rb_cObject);
+    rb_undef_alloc_func(rb_cBaseEmitter);
+    rb_define_method(rb_cBaseEmitter, "_emit", base_emitter_emit, -1);
+
+    VALUE cX86Assembler = rb_define_class_under(rb_mX86, "Assembler", rb_cBaseEmitter);
+    rb_define_singleton_method(cX86Assembler, "new", x86_assembler_new, 1);
 
     rb_cOperand = rb_define_class_under(rb_mAsmjit, "Operand", rb_cObject);
+    rb_undef_alloc_func(rb_cOperand);
 
     cX86Reg = rb_define_class_under(rb_mX86, "Reg", rb_cOperand);
-    rb_undef_alloc_func(cX86Reg);
     rb_define_attr(cX86Reg, "name", 1, 0);
 
     cX86Mem = rb_define_class_under(rb_mX86, "Mem", rb_cOperand);
-    rb_undef_alloc_func(cX86Mem);
     rb_define_singleton_method(cX86Mem, "new", x86_ptr, 3);
 
     VALUE instructions = rb_ary_new();
