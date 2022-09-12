@@ -54,7 +54,7 @@ module AsmJIT
 
     class << self
       def ptr(base, offset, size)
-        _ptr(Helpers.parse_operand(base), offset, size)
+        X86::Mem.new(Helpers.parse_operand(base), offset, size)
       end
 
       def qword_ptr(base, offset)
