@@ -200,12 +200,30 @@ static VALUE build_registers_hash() {
     REGISTER(edi);
     REGISTER(esi);
 
+    REGISTER(r8d);
+    REGISTER(r9d);
+    REGISTER(r10d);
+    REGISTER(r11d);
+    REGISTER(r12d);
+    REGISTER(r13d);
+    REGISTER(r14d);
+    REGISTER(r15d);
+
     REGISTER(rax);
     REGISTER(rbx);
     REGISTER(rcx);
     REGISTER(rdx);
     REGISTER(rdi);
     REGISTER(rsi);
+
+    REGISTER(r8);
+    REGISTER(r9);
+    REGISTER(r10);
+    REGISTER(r11);
+    REGISTER(r12);
+    REGISTER(r13);
+    REGISTER(r14);
+    REGISTER(r15);
 
 #undef REGISTER
 
