@@ -298,15 +298,6 @@ VALUE x86_assembler_new(VALUE self, VALUE code_holder) {
     return TypedData_Wrap_Struct(self, &base_emitter_type, wrapper);
 }
 
-Operand parse_operand(VALUE val) {
-    if (FIXNUM_P(val)) {
-        return Imm(NUM2LL(val));
-    } else if (rb_obj_is_kind_of(val, rb_cOperand)) {
-        return opnd_get(val);
-    }
-    rb_raise(rb_eAsmJITError, "bad operand: %" PRIsVALUE, val);
-}
-
 VALUE base_emitter_new_label(VALUE self) {
     BaseEmitter *emitter = get_emitter(self);
 
@@ -345,7 +336,7 @@ VALUE base_emitter_emit(int argc, VALUE* argv, VALUE self) {
 
     Operand operands[6];
     for (int i = 0; i < argc - 1; i++) {
-        operands[i] = parse_operand(argv[i + 1]);
+        operands[i] = opnd_get(argv[i + 1]);
     }
 
     emitter->emitOpArray(inst_id, &operands[0], argc - 1);
