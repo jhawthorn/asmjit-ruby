@@ -7,10 +7,14 @@ using namespace std;
 
 using namespace asmjit;
 
+static BaseEmitter *get_emitter(VALUE self);
+
 static VALUE rb_mAsmjit;
 static VALUE rb_eAsmJITError;
 static VALUE rb_cOperand;
 static VALUE cX86Reg;
+static VALUE cLabel;
+static VALUE cImm;
 static VALUE cX86Mem;
 
 static JitRuntime jit_runtime;
@@ -133,19 +137,27 @@ static VALUE build_register(const char *c_name, x86::Reg reg) {
     return obj;
 }
 
-static VALUE build_label(Label label) {
-    OperandWrapper *wrapper = static_cast<OperandWrapper *>(xmalloc(sizeof(OperandWrapper)));
-    wrapper->opnd = label;
-
-    VALUE obj = TypedData_Wrap_Struct(cX86Reg, &operand_type, wrapper);
-    return obj;
-}
-
-
 static Operand opnd_get(VALUE val) {
     OperandWrapper *wrapper;
     TypedData_Get_Struct(val, OperandWrapper, &operand_type, wrapper);
     return wrapper->opnd;
+}
+
+static VALUE operand_to_s(VALUE obj) {
+    Operand opnd = opnd_get(obj);
+    Arch arch = jit_runtime.arch();
+
+    const BaseEmitter *emitter = NULL;
+
+    VALUE emitterv = rb_iv_get(obj, "@emitter");
+    if (RTEST(emitterv)) {
+        emitter = get_emitter(emitterv);
+    }
+
+    String s;
+    Formatter::formatOperand(s, FormatFlags::kNone, emitter, arch, opnd);
+
+    return rb_str_new(s.data(), s.size());
 }
 
 static Label label_get(VALUE val) {
@@ -186,6 +198,14 @@ static VALUE x86_ptr(VALUE _self, VALUE regv, VALUE offsetv, VALUE sizev) {
 
     VALUE obj = TypedData_Wrap_Struct(cX86Mem, &operand_type, wrapper);
     return obj;
+}
+
+static VALUE imm_new(VALUE _self, VALUE val) {
+    Imm imm = Imm(NUM2LL(val));
+
+    OperandWrapper *wrapper = static_cast<OperandWrapper *>(xmalloc(sizeof(OperandWrapper)));
+    wrapper->opnd = imm;
+    return TypedData_Wrap_Struct(_self, &operand_type, wrapper);
 }
 
 static VALUE build_registers_hash() {
@@ -257,6 +277,12 @@ static const rb_data_type_t base_emitter_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
+static BaseEmitter *get_emitter(VALUE self) {
+    BaseEmitterWrapper *wrapper;
+    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
+    return wrapper->emitter;
+}
+
 VALUE x86_assembler_new(VALUE self, VALUE code_holder) {
     BaseEmitterWrapper *wrapper = static_cast<BaseEmitterWrapper *>(xmalloc(sizeof(CodeHolderWrapper)));
 
@@ -282,18 +308,20 @@ Operand parse_operand(VALUE val) {
 }
 
 VALUE base_emitter_new_label(VALUE self) {
-    BaseEmitterWrapper *wrapper;
-    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
-    BaseEmitter *emitter = wrapper->emitter;
+    BaseEmitter *emitter = get_emitter(self);
 
     Label label = emitter->newLabel();
-    return build_label(label);
+
+    OperandWrapper *opnd_wrapper = static_cast<OperandWrapper *>(xmalloc(sizeof(OperandWrapper)));
+    opnd_wrapper->opnd = label;
+
+    VALUE obj = TypedData_Wrap_Struct(cLabel, &operand_type, opnd_wrapper);
+    rb_iv_set(obj, "@emitter", self);
+    return obj;
 }
 
 VALUE base_emitter_bind(VALUE self, VALUE labelv) {
-    BaseEmitterWrapper *wrapper;
-    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
-    BaseEmitter *emitter = wrapper->emitter;
+    BaseEmitter *emitter = get_emitter(self);
 
     Label label = label_get(labelv);
 
@@ -306,10 +334,7 @@ VALUE base_emitter_bind(VALUE self, VALUE labelv) {
 }
 
 VALUE base_emitter_emit(int argc, VALUE* argv, VALUE self) {
-    BaseEmitterWrapper *wrapper;
-    TypedData_Get_Struct(self, BaseEmitterWrapper, &base_emitter_type, wrapper);
-
-    BaseEmitter *emitter = wrapper->emitter;
+    BaseEmitter *emitter = get_emitter(self);
 
     if (argc < 1) return Qnil;
     if (argc > 7) return Qnil;
@@ -361,12 +386,18 @@ Init_asmjit(void)
 
     rb_cOperand = rb_define_class_under(rb_mAsmjit, "Operand", rb_cObject);
     rb_undef_alloc_func(rb_cOperand);
+    rb_define_method(rb_cOperand, "to_s", operand_to_s, 0);
 
     cX86Reg = rb_define_class_under(rb_mX86, "Reg", rb_cOperand);
     rb_define_attr(cX86Reg, "name", 1, 0);
 
     cX86Mem = rb_define_class_under(rb_mX86, "Mem", rb_cOperand);
     rb_define_singleton_method(cX86Mem, "new", x86_ptr, 3);
+
+    cImm = rb_define_class_under(rb_mAsmjit, "Imm", rb_cOperand);
+    rb_define_singleton_method(cImm, "new", imm_new, 1);
+
+    cLabel = rb_define_class_under(rb_mAsmjit, "Label", rb_cOperand);
 
     VALUE instructions = rb_ary_new();
 

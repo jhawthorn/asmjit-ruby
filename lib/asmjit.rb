@@ -39,13 +39,24 @@ module AsmJIT
     end
   end
 
+  class Operand
+    def inspect
+      "#<#{self.class} #{to_s}>"
+    end
+  end
+
   module X86
     module Helpers
       extend self
 
       def parse_operand(arg)
-        if Symbol === arg && reg = REGISTERS[arg]
-          reg
+        case arg
+        when Operand
+          arg
+        when Symbol
+          REGISTERS.fetch(arg)
+        when Integer
+          Imm.new(arg)
         else
           arg
         end

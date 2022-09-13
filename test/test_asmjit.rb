@@ -85,6 +85,19 @@ class TestAsmJIT < AsmJitTest
     ], code
   end
 
+  def test_operand_inspect
+    code = CodeHolder.new
+    asm = X86::Assembler.new(code)
+
+    label = asm.new_label
+    register = X86::REGISTERS[:rax]
+    mem = X86.qword_ptr(:rax, 32)
+
+    assert_equal "#<AsmJIT::Label L0>", label.inspect
+    assert_equal "#<AsmJIT::X86::Reg rax>", register.inspect
+    assert_equal "#<AsmJIT::X86::Mem qword ptr [rax+32]>", mem.inspect
+  end
+
   def test_readme_example
     example = <<~RUBY
       f = AsmJIT.assemble do |a|
