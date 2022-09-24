@@ -4,10 +4,12 @@ require "bundler/gem_tasks"
 require "rake/testtask"
 
 Rake::TestTask.new(:test) do |t|
-  t.libs << "test"
-  t.libs << "lib"
+  t.libs << "test" << "lib"
   t.test_files = FileList["test/**/test_*.rb"]
+  t.verbose = true
+  t.warning = true
 end
+task test: :compile
 
 require "rake/extensiontask"
 
@@ -17,4 +19,4 @@ Rake::ExtensionTask.new("asmjit") do |ext|
   ext.lib_dir = "lib/asmjit"
 end
 
-task default: %i[clobber compile test]
+task default: %i[test]

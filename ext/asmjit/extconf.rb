@@ -2,16 +2,16 @@
 
 require "mkmf"
 
-asmjit_dir = File.expand_path("asmjit/src/", __dir__)
+Dir.chdir __dir__ do
+  $srcs = [
+    Dir["*.cc"],
+    Dir["asmjit/src/**/*.cpp"]
+  ].flatten.map { |f| File.basename f }
 
-$INCFLAGS << " -I#{asmjit_dir} "
+  $VPATH.concat Dir["asmjit/src/**/"].map { |x| "$(srcdir)/#{x}" }
+end
 
-$CXXFLAGS << " -DASMJIT_EMBED "
-
-$srcs = []
-$srcs.concat Dir[File.join(__dir__, "*.cc")]
-$srcs.concat Dir[File.join(asmjit_dir, "**/*.cpp")]
-
-$objs = $srcs.map{|x| x.gsub(/\.(cc|cpp)\z/, ".o") }
+append_cppflags("-I$(srcdir)/asmjit/src")
+append_cppflags("-DASMJIT_EMBED")
 
 create_makefile("asmjit/asmjit")
