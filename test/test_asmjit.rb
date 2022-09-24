@@ -67,7 +67,7 @@ class TestAsmJIT < AsmJitTest
     assembler.mov(:rax, X86.qword_ptr(:rcx, 8))
 
     assert_disasm [
-      "mov rax, qword ptr [rcx + 8]",
+      "mov rax, qword ptr [rcx+8]",
     ], code
   end
 
@@ -81,8 +81,9 @@ class TestAsmJIT < AsmJitTest
     asm.jnz(label)
 
     assert_disasm [
+      "L0:",
       "sub rax, 1",
-      "jne 0"
+      "short jnz L0"
     ], code
   end
 

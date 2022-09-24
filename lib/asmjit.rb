@@ -5,8 +5,7 @@ require_relative "asmjit/asmjit"
 
 AsmJit = AsmJIT
 module AsmJIT
-  def self.assemble
-    code = CodeHolder.new
+  def self.assemble(code = CodeHolder.new)
     yield code.assembler
     code
   end

@@ -27,13 +27,32 @@ class RubyErrorHandler : public ErrorHandler {
 };
 RubyErrorHandler rubyErrorHandler;
 
+class RubyLogger : public Logger {
+    public:
+        RubyLogger(VALUE obj) : obj(obj) {}
+        VALUE obj;
+
+        Error _log(const char* data, size_t size) noexcept override {
+            VALUE string;
+            if (size == SIZE_MAX) {
+                string = rb_str_new_cstr(data);
+            } else {
+                string = rb_str_new(data, size);
+            }
+            rb_funcall(obj, rb_intern("<<"), 1, string);
+            return kErrorOk;
+        }
+};
+
 struct CodeHolderWrapper {
     CodeHolder *code;
+    RubyLogger *logger;
 };
 
 void code_holder_free(void *data) {
     CodeHolderWrapper *wrapper = static_cast<CodeHolderWrapper *>(data);
     delete wrapper->code;
+    delete wrapper->logger;
     xfree(wrapper);
 }
 
@@ -51,9 +70,39 @@ static const rb_data_type_t code_holder_type = {
 VALUE code_holder_alloc(VALUE self) {
     CodeHolderWrapper *wrapper = static_cast<CodeHolderWrapper *>(xmalloc(sizeof(CodeHolderWrapper)));
     wrapper->code = new CodeHolder();
+    wrapper->logger = NULL;
     wrapper->code->setErrorHandler(&rubyErrorHandler);
 
     return TypedData_Wrap_Struct(self, &code_holder_type, wrapper);
+}
+
+VALUE code_holder_set_logger(VALUE self, VALUE object) {
+    CodeHolderWrapper *wrapper;
+    TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
+
+    if (wrapper->logger) {
+        wrapper->code->resetLogger();
+        delete wrapper->logger;
+    }
+
+    if (RTEST(object)) {
+        wrapper->logger = new RubyLogger(object);
+        wrapper->logger->setFlags(FormatFlags::kHexImms);
+        wrapper->code->setLogger(wrapper->logger);
+    }
+
+    return object;
+}
+
+VALUE code_holder_get_logger(VALUE self) {
+    CodeHolderWrapper *wrapper;
+    TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
+
+    if (wrapper->logger) {
+        return wrapper->logger->obj;
+    } else {
+        return Qnil;
+    }
 }
 
 VALUE code_holder_initialize(VALUE self) {
@@ -363,6 +412,9 @@ Init_asmjit(void)
     rb_define_method(cCodeHolder, "to_ptr", code_holder_to_ptr, 0);
     rb_define_method(cCodeHolder, "def_method", code_holder_define_method, 3);
     rb_define_method(cCodeHolder, "binary", code_holder_binary, 0);
+
+    rb_define_method(cCodeHolder, "logger", code_holder_get_logger, 0);
+    rb_define_method(cCodeHolder, "logger=", code_holder_set_logger, 1);
 
     VALUE rb_mX86 = rb_define_module_under(rb_mAsmjit, "X86");
 
