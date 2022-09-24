@@ -14,8 +14,13 @@ class TestAsmJIT < AsmJitTest
     assert_equal 1663, instructions.size
   end
 
+  attr_reader :code
+  def setup
+    @code = AsmJIT::CodeHolder.new
+    @code.logger = +""
+  end
+
   def test_assembly_binary_output
-    code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
     assembler.mov(:eax, 0x123)
     assembler.mov(:eax, 0x456)
@@ -27,7 +32,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_assembly_simple_operations
-    code = AsmJIT::CodeHolder.new
     asm = AsmJIT::X86::Assembler.new(code)
     asm.mov(:eax, 0x123)
     asm.add(:eax, 0x456)
@@ -43,7 +47,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_calling_assembled_function
-    code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
     assembler.mov(:eax, 123)
     assembler.ret
@@ -60,7 +63,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_assembly_memory_operand
-    code = CodeHolder.new
     assembler = X86::Assembler.new(code)
     assembler.mov(:rax, X86.qword_ptr(:rcx, 8))
 
@@ -70,7 +72,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_label
-    code = CodeHolder.new
     asm = X86::Assembler.new(code)
 
     label = asm.new_label
@@ -86,7 +87,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_operand_inspect
-    code = CodeHolder.new
     asm = X86::Assembler.new(code)
 
     label = asm.new_label
@@ -138,7 +138,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_errors_on_insufficient_operands
-    code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
 
     ex = assert_raises AsmJIT::Error do
@@ -148,7 +147,6 @@ class TestAsmJIT < AsmJitTest
   end
 
   def test_errors_on_invalid_operands
-    code = AsmJIT::CodeHolder.new
     assembler = AsmJIT::X86::Assembler.new(code)
 
     ex = assert_raises AsmJIT::Error do
