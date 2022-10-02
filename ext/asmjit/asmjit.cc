@@ -262,6 +262,20 @@ static VALUE build_registers_hash() {
 
 #define REGISTER(name) rb_hash_aset(hash, ID2SYM(rb_intern(#name)), build_register((#name), x86::name))
 
+    REGISTER(ah);
+    REGISTER(bh);
+    REGISTER(ch);
+    REGISTER(dh);
+    REGISTER(al);
+    REGISTER(bl);
+    REGISTER(cl);
+    REGISTER(dl);
+
+    REGISTER(ax);
+    REGISTER(bx);
+    REGISTER(cx);
+    REGISTER(dx);
+
     REGISTER(eax);
     REGISTER(ebx);
     REGISTER(ecx);
