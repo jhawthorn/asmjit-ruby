@@ -266,15 +266,42 @@ static VALUE build_registers_hash() {
     REGISTER(bh);
     REGISTER(ch);
     REGISTER(dh);
+
     REGISTER(al);
     REGISTER(bl);
     REGISTER(cl);
     REGISTER(dl);
+    REGISTER(dil);
+    REGISTER(sil);
+    REGISTER(spl);
+    REGISTER(bpl);
+
+    REGISTER(r8b);
+    REGISTER(r9b);
+    REGISTER(r10b);
+    REGISTER(r11b);
+    REGISTER(r12b);
+    REGISTER(r13b);
+    REGISTER(r14b);
+    REGISTER(r15b);
 
     REGISTER(ax);
     REGISTER(bx);
     REGISTER(cx);
     REGISTER(dx);
+    REGISTER(di);
+    REGISTER(si);
+    REGISTER(sp);
+    REGISTER(bp);
+
+    REGISTER(r8w);
+    REGISTER(r9w);
+    REGISTER(r10w);
+    REGISTER(r11w);
+    REGISTER(r12w);
+    REGISTER(r13w);
+    REGISTER(r14w);
+    REGISTER(r15w);
 
     REGISTER(eax);
     REGISTER(ebx);
@@ -282,6 +309,8 @@ static VALUE build_registers_hash() {
     REGISTER(edx);
     REGISTER(edi);
     REGISTER(esi);
+    REGISTER(esp);
+    REGISTER(ebp);
 
     REGISTER(r8d);
     REGISTER(r9d);
@@ -298,6 +327,8 @@ static VALUE build_registers_hash() {
     REGISTER(rdx);
     REGISTER(rdi);
     REGISTER(rsi);
+    REGISTER(rsp);
+    REGISTER(rbp);
 
     REGISTER(r8);
     REGISTER(r9);
