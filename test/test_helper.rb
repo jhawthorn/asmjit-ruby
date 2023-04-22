@@ -13,4 +13,12 @@ class AsmJitTest < Minitest::Test
 
     assert_equal expected, code.logger.lines.map(&:chomp)
   end
+
+  def x86?
+    RUBY_PLATFORM.start_with?("x86_64")
+  end
+
+  def arm?
+    RUBY_PLATFORM.start_with?("arm64")
+  end
 end

@@ -110,7 +110,9 @@ VALUE code_holder_initialize(VALUE self) {
     TypedData_Get_Struct(self, CodeHolderWrapper, &code_holder_type, wrapper);
 
     CodeHolder *code = wrapper->code;
-    code->init(jit_runtime.environment());
+    Environment env;
+    env.init(Arch::kX64);
+    code->init(env);
 
     return self;
 }
@@ -174,11 +176,13 @@ static const rb_data_type_t operand_type = {
 
 struct OperandWrapper {
     Operand opnd;
+    Arch arch;
 };
 
 static VALUE build_register(const char *c_name, x86::Reg reg) {
     OperandWrapper *wrapper = static_cast<OperandWrapper *>(xmalloc(sizeof(OperandWrapper)));
     wrapper->opnd = reg;
+    wrapper->arch = Arch::kX64;
 
     VALUE name = ID2SYM(rb_intern(c_name));
     VALUE obj = TypedData_Wrap_Struct(cX86Reg, &operand_type, wrapper);
@@ -192,9 +196,15 @@ static Operand opnd_get(VALUE val) {
     return wrapper->opnd;
 }
 
+static Arch opnd_arch_get(VALUE val) {
+    OperandWrapper *wrapper;
+    TypedData_Get_Struct(val, OperandWrapper, &operand_type, wrapper);
+    return wrapper->arch;
+}
+
 static VALUE operand_to_s(VALUE obj) {
     Operand opnd = opnd_get(obj);
-    Arch arch = jit_runtime.arch();
+    Arch arch = opnd_arch_get(obj);
 
     const BaseEmitter *emitter = NULL;
 
@@ -378,7 +388,7 @@ static BaseEmitter *get_emitter(VALUE self) {
 }
 
 VALUE x86_assembler_new(VALUE self, VALUE code_holder) {
-    BaseEmitterWrapper *wrapper = static_cast<BaseEmitterWrapper *>(xmalloc(sizeof(CodeHolderWrapper)));
+    BaseEmitterWrapper *wrapper = static_cast<BaseEmitterWrapper *>(xmalloc(sizeof(BaseEmitterWrapper)));
 
     CodeHolderWrapper *code_wrapper;
     TypedData_Get_Struct(code_holder, CodeHolderWrapper, &code_holder_type, code_wrapper);

@@ -11,6 +11,7 @@ Dir.chdir __dir__ do
   $VPATH.concat Dir["asmjit/src/**/"].map { |x| "$(srcdir)/#{x}" }
 end
 
+$CXXFLAGS += " -std=c++11 "
 append_cppflags("-I$(srcdir)/asmjit/src")
 append_cppflags("-DASMJIT_EMBED")
 

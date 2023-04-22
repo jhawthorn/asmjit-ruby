@@ -1,23 +1,22 @@
 PATH
   remote: .
   specs:
-    asmjit (0.2.1)
+    asmjit (0.2.2)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    hatstone (1.0.0)
     minitest (5.15.0)
     rake (13.0.6)
     rake-compiler (1.2.0)
       rake
 
 PLATFORMS
+  arm64-darwin-22
   x86_64-linux
 
 DEPENDENCIES
   asmjit!
-  hatstone
   minitest (~> 5.0)
   rake (~> 13.0)
   rake-compiler
